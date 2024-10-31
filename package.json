@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/Jaidenpearson/tinyApp/issues"
   },
-  "homepage": "https://github.com/Jaidenpearson/tinyApp#readme"
+  "homepage": "https://github.com/Jaidenpearson/tinyApp#readme",
+  "dependencies": {
+    "express": "^4.21.1"
+  }
 }
