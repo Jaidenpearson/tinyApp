@@ -1,4 +1,5 @@
 const express = require("express");
+const { v4: uuidv4 }= require('uuid')
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -6,7 +7,8 @@ app.set("view engine", "ejs")
 app.use(express.urlencoded({ extended: true }));
 
 const shortURLID = () => {
-  return Math.random() * 10
+  let id = uuidv4()
+  return id.slice(0, 6)
 };
 
 const urlDatabase = {
@@ -32,8 +34,8 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
-  res.send("Ok"); // Respond with 'Ok' (we will replace this)
+  urlDatabase[shortURLID()] = req.body.longURL
+  res.redirect('/urls')
 });
 
 app.get("/urls/:id", (req, res) => {
