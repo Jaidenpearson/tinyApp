@@ -12,7 +12,7 @@ const shortURLID = () => {
 };
 
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
+  "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
 
@@ -20,11 +20,11 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-app.get('/', (res, req) => {
+app.get('/', (res, req) => { //root home page redirects to MY URLS
   req.redirect('/urls')
 })
 
-app.get("/urls", (req, res) => {
+app.get("/urls", (req, res) => {  //MY URLS page
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
@@ -34,18 +34,23 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  const shortUrl = shortURLID();
+  const shortUrl = shortURLID(); //Assigns short URL and link to submission, redirects to link page
   urlDatabase[shortUrl] = req.body.longURL;
   res.redirect(`/urls/${shortUrl}`);
 });
 
-app.post('/urls/:id/delete', (req, res) => {
+app.post('/urls/:id/delete', (req, res) => { //Deletes link when button is pushed
   delete urlDatabase[req.params.id]
+ res.redirect('/urls')
+})
+
+app.post('/urls/:id/edit', (req, res) => { //Updates url from the ID page and redirects to /urls
+  urlDatabase[req.params.id] = req.body.longURL
   res.redirect('/urls')
   console.log(urlDatabase)
 })
 
-app.get("/urls/:id", (req, res) => {
+app.get("/urls/:id", (req, res) => {  //Displays link specific page
   const longURL = urlDatabase[req.params.id]
   const templateVars = { id: req.params.id, longURL: longURL};
   res.render("urls_show", templateVars);
