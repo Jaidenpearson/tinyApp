@@ -1,10 +1,12 @@
 const express = require("express");
 const { v4: uuidv4 }= require('uuid')
+const cookieParser = require('cookie-parser')
 const app = express();
 const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs")
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser())
 
 const shortURLID = () => {
   let id = uuidv4()
@@ -62,6 +64,13 @@ app.post('/login', (req, res) => {
   res.cookie('username', req.body.username)
   res.redirect('/urls')
 })
+
+app.get("/urls", (req, res) => {
+  const templateVars = {
+    username: req.cookies["username"],
+  };
+  res.render("urls_index", templateVars);
+});
 
 
 
