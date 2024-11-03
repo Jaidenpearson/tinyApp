@@ -56,6 +56,13 @@ app.get("/urls/:id", (req, res) => {  //Displays link specific page
   res.render("urls_show", templateVars);
 });
 
+//Login
+
+app.post('/login', (req, res) => {
+  res.cookie('username', req.body.username)
+  res.redirect('/urls')
+})
+
 
 
 
