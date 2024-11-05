@@ -1,6 +1,6 @@
 const express = require("express");
 const { v4: uuidv4 }= require('uuid')
-const cookieParser = require('cookie-parser')
+const cookieParser = require("cookie-parser");
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -18,16 +18,21 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com",
 };
 
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-app.get('/', (res, req) => { //root home page redirects to MY URLS
+app.get('/', (req, res) => { //root home page redirects to MY URLS
   req.redirect('/urls')
 })
 
 app.get("/urls", (req, res) => {  //MY URLS page
-  const templateVars = { urls: urlDatabase };
+  const templateVars = {
+    urls: urlDatabase,
+    username: req.cookies["username"],
+   };
+   console.log("templateVars", templateVars)
   res.render("urls_index", templateVars);
 });
 
@@ -49,7 +54,6 @@ app.post('/urls/:id/delete', (req, res) => { //Deletes link when button is pushe
 app.post('/urls/:id/edit', (req, res) => { //Updates url from the ID page and redirects to /urls
   urlDatabase[req.params.id] = req.body.longURL
   res.redirect('/urls')
-  console.log(urlDatabase)
 })
 
 app.get("/urls/:id", (req, res) => {  //Displays link specific page
@@ -61,16 +65,10 @@ app.get("/urls/:id", (req, res) => {  //Displays link specific page
 //Login
 
 app.post('/login', (req, res) => {
-  res.cookie('username', req.body.username)
+  res.cookie('username', req.cookie)
+  console.log("req.body.username", req.cookie)
   res.redirect('/urls')
 })
-
-app.get("/urls", (req, res) => {
-  const templateVars = {
-    username: req.cookies["username"],
-  };
-  res.render("urls_index", templateVars);
-});
 
 
 
