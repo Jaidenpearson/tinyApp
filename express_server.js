@@ -24,7 +24,7 @@ app.listen(PORT, () => {
 });
 
 app.get('/', (req, res) => { //root home page redirects to MY URLS
-  req.redirect('/urls')
+  res.redirect('/urls')
 })
 
 app.get("/urls", (req, res) => {  //MY URLS page
@@ -67,6 +67,13 @@ app.get("/urls/:id", (req, res) => {  //Displays link specific page
 app.post('/login', (req, res) => {
   res.cookie('username', req.cookie)
   console.log("req.body.username", req.cookie)
+  res.redirect('/urls')
+})
+
+//Logout
+
+app.post('/logout', (req, res) => {
+  res.clearCookie('username')
   res.redirect('/urls')
 })
 
