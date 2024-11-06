@@ -30,7 +30,8 @@ app.get('/', (req, res) => { //root home page redirects to MY URLS
 app.get("/urls", (req, res) => {  //MY URLS page
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies["username"],
+    username: req.cookies['email'],
+    password: req.cookies['password'],
    };
    console.log("templateVars", templateVars)
   res.render("urls_index", templateVars);
@@ -65,8 +66,7 @@ app.get("/urls/:id", (req, res) => {  //Displays link specific page
 //Login
 
 app.post('/login', (req, res) => {
-  res.cookie('username', req.cookie)
-  console.log("req.body.username", req.cookie)
+  res.cookie('username', req.body.username)
   res.redirect('/urls')
 })
 
@@ -76,6 +76,41 @@ app.post('/logout', (req, res) => {
   res.clearCookie('username')
   res.redirect('/urls')
 })
+
+//Registration and Authentication
+
+app.get('/register', (req, res) => {
+  res.render('urls_register')
+})
+
+app.post('/register', (req, res) => {
+  userID = shortURLID(),
+  
+  res.cookie('email', req.body.email),
+  res.cookie('password', req.body.password),
+
+users[userID] = {
+  id: userID,
+  email: req.body.email,
+  password: req.body.email
+}
+console.log(users)
+
+res.redirect('/urls')
+})
+
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
 
 
 
