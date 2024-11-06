@@ -1,10 +1,12 @@
 const express = require("express");
 const { v4: uuidv4 }= require('uuid')
+const cookieParser = require("cookie-parser");
 const app = express();
 const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs")
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser())
 
 const shortURLID = () => {
   let id = uuidv4()
@@ -16,16 +18,21 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com",
 };
 
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-app.get('/', (res, req) => { //root home page redirects to MY URLS
-  req.redirect('/urls')
+app.get('/', (req, res) => { //root home page redirects to MY URLS
+  res.redirect('/urls')
 })
 
 app.get("/urls", (req, res) => {  //MY URLS page
-  const templateVars = { urls: urlDatabase };
+  const templateVars = {
+    urls: urlDatabase,
+    username: req.cookies["username"],
+   };
+   console.log("templateVars", templateVars)
   res.render("urls_index", templateVars);
 });
 
@@ -47,7 +54,6 @@ app.post('/urls/:id/delete', (req, res) => { //Deletes link when button is pushe
 app.post('/urls/:id/edit', (req, res) => { //Updates url from the ID page and redirects to /urls
   urlDatabase[req.params.id] = req.body.longURL
   res.redirect('/urls')
-  console.log(urlDatabase)
 })
 
 app.get("/urls/:id", (req, res) => {  //Displays link specific page
@@ -56,6 +62,26 @@ app.get("/urls/:id", (req, res) => {  //Displays link specific page
   res.render("urls_show", templateVars);
 });
 
+//Login
+
+app.post('/login', (req, res) => {
+  res.cookie('username', req.body.username)
+  console.log("req.body.username", req.cookies)
+  res.redirect('/urls')
+})
+
+//Logout
+
+app.post('/logout', (req, res) => {
+  res.clearCookie('username')
+  res.redirect('/urls')
+})
+
+//Register
+
+app.get('/register', (req, res) => {
+  res.render('urls_register')
+})
 
 
 
