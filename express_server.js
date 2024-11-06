@@ -84,33 +84,22 @@ app.get('/register', (req, res) => {
 })
 
 app.post('/register', (req, res) => {
-  userID = shortURLID(),
+  const userID = shortURLID()
   
-  res.cookie('email', req.body.email),
-  res.cookie('password', req.body.password),
+  res.cookie('email', req.body.email);
+  res.cookie('password', req.body.password);
 
 users[userID] = {
   id: userID,
   email: req.body.email,
-  password: req.body.email
+  password: req.body.password
 }
 console.log(users)
 
 res.redirect('/urls')
 })
 
-const users = {
-  userRandomID: {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur",
-  },
-  user2RandomID: {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk",
-  },
-};
+const users = {};
 
 
 
