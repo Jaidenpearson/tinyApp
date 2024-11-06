@@ -65,8 +65,8 @@ app.get("/urls/:id", (req, res) => {  //Displays link specific page
 //Login
 
 app.post('/login', (req, res) => {
-  res.cookie('username', req.cookie)
-  console.log("req.body.username", req.cookie)
+  res.cookie('username', req.body.username)
+  console.log("req.body.username", req.cookies)
   res.redirect('/urls')
 })
 
@@ -77,6 +77,11 @@ app.post('/logout', (req, res) => {
   res.redirect('/urls')
 })
 
+//Register
+
+app.get('/register', (req, res) => {
+  res.render('urls_register')
+})
 
 
 
