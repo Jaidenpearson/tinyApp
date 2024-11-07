@@ -18,13 +18,17 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com",
 };
 
+const getUserData = (value, key, obj) => {
+  return Object.values(obj).some(user => user[key] === value)
+}
+
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-app.get('/', (req, res) => { //root home page redirects to MY URLS
-  res.redirect('/urls')
+app.get('/', (req, res) => { //root home page redirects to Login
+  res.redirect('/login')
 })
 
 app.get("/urls", (req, res) => {  //MY URLS page
@@ -65,9 +69,19 @@ app.get("/urls/:id", (req, res) => {  //Displays link specific page
 
 //Login
 
+app.get('/login', (req, res) => {
+  res.render('login')
+})
+
 app.post('/login', (req, res) => {
-  res.cookie('username', req.body.username)
-  res.redirect('/urls')
+
+  if(getUserData(req.body.email, 'email', users)) {
+    if(getUserData(req.body.password, 'password', users)) {
+      res.cookie('email', req.body.email)
+      res.cookie('password', req.body.password)
+      res.redirect('/urls')
+    }
+  }
 })
 
 //Logout
@@ -75,23 +89,18 @@ app.post('/login', (req, res) => {
 app.post('/logout', (req, res) => {
   res.clearCookie('email')
   res.clearCookie('password')
-  res.redirect('/register')
+  res.redirect('/login')
 })
-
 //Registration and Authentication
 
 app.get('/register', (req, res) => {
   res.render('urls_register')
 })
 
-const getUserByEmail = (email, obj) => {
-  return Object.values(obj).some(user => user.email === email)
-}
-
 app.post('/register', (req, res) => {
   const userID = shortURLID()
 
-  if(getUserByEmail(req.body.email, users)) {
+  if(getUserData(req.body.email, 'email', users)) {
     return res.status(400).send('User already exists, please enter new email address')
 }
 
