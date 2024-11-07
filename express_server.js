@@ -30,7 +30,7 @@ app.get('/', (req, res) => { //root home page redirects to MY URLS
 app.get("/urls", (req, res) => {  //MY URLS page
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies['email'],
+    email: req.cookies['email'],
     password: req.cookies['password'],
    };
    console.log("templateVars", templateVars)
@@ -73,8 +73,9 @@ app.post('/login', (req, res) => {
 //Logout
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('username')
-  res.redirect('/urls')
+  res.clearCookie('email')
+  res.clearCookie('password')
+  res.redirect('/register')
 })
 
 //Registration and Authentication
@@ -83,18 +84,32 @@ app.get('/register', (req, res) => {
   res.render('urls_register')
 })
 
+const getUserByEmail = (email, obj) => {
+  return Object.values(obj).some(user => user.email === email)
+}
+
 app.post('/register', (req, res) => {
   const userID = shortURLID()
+
+  if(getUserByEmail(req.body.email, users)) {
+    return res.status(400).send('User already exists, please enter new email address')
+}
+
   
-  res.cookie('email', req.body.email);
-  res.cookie('password', req.body.password);
+  res.cookie('email', req.body.email),
+  res.cookie('password', req.body.password)
+
+  if(!req.body.email || !req.body.password) {
+    return res.status(400).send('Please enter valid info to register')
+  } 
+
+  console.log('users', users)
 
 users[userID] = {
   id: userID,
   email: req.body.email,
   password: req.body.password
 }
-console.log(users)
 
 res.redirect('/urls')
 })
