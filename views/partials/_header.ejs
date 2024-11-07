@@ -23,12 +23,12 @@
           <button type="submit" class="btn btn-secondary">Logout</button>
         </form>
         <% } else { %>
-      <div>
-      <form action="/login" method="post">
-          <input name="email" type="text" placeholder="Username">
-          <button class="btn btn-secondary" type="submit"> Login</button>
+      <form action="/login" method="get">
+          <button class="btn btn-secondary" type="submit"> Log in</button>
         </form>
-      </div>
+      <form action="/register" method="get">
+        <button class="btn btn-secondary" type="submit"> Sign in</button>
+      </form>
       <% } %>
     </div>
   </nav>
