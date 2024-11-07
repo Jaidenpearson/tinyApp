@@ -12,7 +12,9 @@
   <title>Register</title>
 </head>
 <body>
-  <h1>Register</h1><br>
+  <%- include('partials/_header') %>
+  
+  <h1>Create Account</h1><br>
   <form action="/register" method="post">
     <label for="email">Email</label><br>
     <input type="email" name="email"><br>

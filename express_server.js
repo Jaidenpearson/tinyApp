@@ -34,10 +34,9 @@ app.get('/', (req, res) => { //root home page redirects to Login
 app.get("/urls", (req, res) => {  //MY URLS page
   const templateVars = {
     urls: urlDatabase,
-    email: req.cookies['email'],
+    email: req.cookies['email'] || null,
     password: req.cookies['password'],
    };
-   console.log("templateVars", templateVars)
   res.render("urls_index", templateVars);
 });
 
@@ -67,21 +66,25 @@ app.get("/urls/:id", (req, res) => {  //Displays link specific page
   res.render("urls_show", templateVars);
 });
 
-//Login
+//Login and Authentication
 
 app.get('/login', (req, res) => {
-  res.render('login')
+  res.render('login', null)
 })
 
 app.post('/login', (req, res) => {
 
-  if(getUserData(req.body.email, 'email', users)) {
-    if(getUserData(req.body.password, 'password', users)) {
+  if(getUserData(req.body.email, 'email', users)) { //Checks for matching email in users
+    if (!getUserData(req.body.password, 'password', users)) { //Checks for falsey if password matches one stored in users, sends error code if not
+      return res.status(403).send('Incorrect password')
+    } else if(getUserData(req.body.password, 'password', users)) {  //Checks for truthy if password matches one in users
       res.cookie('email', req.body.email)
       res.cookie('password', req.body.password)
       res.redirect('/urls')
     }
-  }
+  } else if(!getUserData(req.body.email, 'email', users)) {
+    return res.status(403).send('Email cannot be found')
+  } 
 })
 
 //Logout
@@ -91,7 +94,7 @@ app.post('/logout', (req, res) => {
   res.clearCookie('password')
   res.redirect('/login')
 })
-//Registration and Authentication
+//Registration
 
 app.get('/register', (req, res) => {
   res.render('urls_register')
