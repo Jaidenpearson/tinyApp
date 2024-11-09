@@ -1,6 +1,7 @@
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const cookieSession = require("cookie-session");
+const bcrypt = require('bcryptjs')
 const app = express();
 const PORT = 8080;
 
@@ -147,7 +148,8 @@ app.post("/login", (req, res) => {
   const userAuth = getUserByEmail(email, USERS);
 
   if (userAuth) {
-    if (userAuth[password] === password) { 
+    const hashedPassword = userAuth['password']
+    if (bcrypt.compareSync(password, hashedPassword)) { 
       req.session.user_ID = userAuth.id;
       return res.redirect("/urls");
     } else {
@@ -186,9 +188,8 @@ app.post("/register", (req, res) => {
   USERS[userID] = {
     id: userID,
     email,
-    password,
+    password: bcrypt.hashSync(password, 10),
   };
-
   req.session.user_ID = userID;
   res.redirect("/urls");
 });
