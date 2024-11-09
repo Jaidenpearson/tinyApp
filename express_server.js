@@ -2,6 +2,7 @@ const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const cookieSession = require("cookie-session");
 const bcrypt = require('bcryptjs')
+const getUserByEmail = require('./helper')
 const app = express();
 const PORT = 8080;
 
@@ -31,25 +32,6 @@ const URL_DATABASE = {
 
 // Object of registered users
 const USERS = {};
-
-// Checks user data in users object
-const getUserData = (value, key, obj) => {
-  for (let userID in obj) {
-    if (obj[userID][key] === value) {
-      return obj[userID];
-    }
-  }
-  return null;
-};
-
-const getUserByEmail = (email, obj) => {
-  for (let userID in obj) {
-    if (obj[userID].email === email) { 
-      return obj[userID];
-    }
-  }
-  return null;
-};
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
@@ -180,7 +162,7 @@ app.post("/register", (req, res) => {
     return res.status(400).send("Please enter valid info to register");
   }
 
-  if (getUserData(email, "email", USERS)) {
+  if (getUserByEmail(email, USERS)) {
     return res.status(400).send("User already exists, please enter a new email address");
   }
 
