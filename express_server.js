@@ -1,12 +1,16 @@
 const express = require("express");
 const { v4: uuidv4 }= require('uuid')
-const cookieParser = require("cookie-parser");
+const cookieSession = require('cookie-session')
 const app = express();
 const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs")
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser())
+//app.use(cookieParser())
+app.use(cookieSession({
+  name: 'session',
+  keys: ['email', 'password']
+}))
 
 const shortURLID = () => {
   let id = uuidv4()
@@ -41,8 +45,8 @@ app.get('/', (req, res) => { //root home page redirects to Login
 app.get("/urls", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-    email: req.cookies['email'] || null,
-    password: req.cookies['password'],
+    email: req.session['email'] || null,
+    password: req.session['password'],
    };
   res.render("urls_index", templateVars);
 });
@@ -65,8 +69,8 @@ app.post('/urls/:id/delete', (req, res) => {
 app.get("/urls/new", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-    email: req.cookies['email'] || null,
-    password: req.cookies['password'],
+    email: req.session['email'] || null,
+    password: req.session['password'],
    };
   res.render("urls_new", templateVars);
 });
@@ -82,8 +86,8 @@ app.get("/urls/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id]
   const templateVars = { 
     urls: urlDatabase,
-    email: req.cookies['email'] || null,
-    password: req.cookies['password'],
+    email: req.session['email'] || null,
+    password: req.session['password'],
     id: req.params.id, 
     longURL: longURL,
   }
@@ -93,7 +97,7 @@ app.get("/urls/:id", (req, res) => {
 //Login and Authentication
 
 app.get('/login', (req, res) => {
-  templateVars = {email: req.cookies.email}
+  templateVars = {email: req.session.email}
   res.render('login', templateVars)
 })
 
@@ -115,36 +119,37 @@ app.post('/login', (req, res) => {
 //Logout
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('email')
-  res.clearCookie('password')
+  req.session = null
   res.redirect('/login')
 })
 
 //Registration
 
 app.get('/register', (req, res) => {
-  const templateVars = {email: req.cookies.email}
+  const templateVars = {email: req.session.email}
   res.render('urls_register', templateVars)
 })
 
 app.post('/register', (req, res) => {
+  const {email, password} = req.body
+
   const userID = shortURLID()
 
   if(getUserData(req.body.email, 'email', users)) {
     return res.status(400).send('User already exists, please enter new email address')
 }
 
-  res.cookie('email', req.body.email),
-  res.cookie('password', req.body.password)
+  req.session.email =  email
+  req.session.password = password
 
-  if(!req.body.email || !req.body.password) {
+  if(!email || !password) {
     return res.status(400).send('Please enter valid info to register')
   } 
 
 users[userID] = {
   id: userID,
-  email: req.body.email,
-  password: req.body.password,
+  email,
+  password,
 }
 
 console.log('users', users)
