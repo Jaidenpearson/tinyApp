@@ -52,6 +52,10 @@ app.get("/urls", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
+  console.log('req.session', req.session)
+  if(!req.session.email) {
+    return res.status(403).send('You must be logged in to create a tiny URL')
+  }
   const shortUrl = shortURLID();    //Assigns short URL and link to submission, redirects to link page
   urlDatabase[shortUrl] = req.body.longURL;
   res.redirect(`/urls/${shortUrl}`);
@@ -84,6 +88,9 @@ app.post('/urls/:id/edit', (req, res) => { //Updates url from the ID page and re
 
 app.get("/urls/:id", (req, res) => {  
   const longURL = urlDatabase[req.params.id]
+  if(!longURL) {
+    return res.status(403).send('URL does not exist')
+  }
   const templateVars = { 
     urls: urlDatabase,
     email: req.session['email'] || null,
@@ -97,7 +104,10 @@ app.get("/urls/:id", (req, res) => {
 //Login and Authentication
 
 app.get('/login', (req, res) => {
-  templateVars = {email: req.session.email}
+  if(req.session.email) {
+  res.redirect('/urls')
+  }
+  const templateVars = {email: req.session.email}
   res.render('login', templateVars)
 })
 
@@ -107,8 +117,8 @@ app.post('/login', (req, res) => {
     if (!getUserData(req.body.password, 'password', users)) { //Checks for falsey if password doesn't match one in currentUser
       return res.status(403).send('Incorrect password')
     } else if(getUserData(req.body.password, 'password', users)) {  //Checks for truthy if password matches one in currentUser
-      res.cookie('email', req.body.email)
-      res.cookie('password', req.body.password)
+      res.sessio.email.req.body.email
+      res.session.password = req.body.password
       res.redirect('/urls')
     }
   } else if(!getUserData(req.body.email, 'email', users)) {
