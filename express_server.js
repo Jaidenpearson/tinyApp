@@ -13,25 +13,32 @@ const shortURLID = () => {
   return id.slice(0, 6)
 };
 
+//Links stored in object to be rendered on page 
+
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
 };
+
+//User info stored here
+
+const users = {};
+
+//Checks user data in users object
 
 const getUserData = (value, key, obj) => {
   return Object.values(obj).some(user => user[key] === value)
 }
 
-
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
+//Home page - urls_index.js
 
 app.get('/', (req, res) => { //root home page redirects to Login
   res.redirect('/login')
 })
 
-app.get("/urls", (req, res) => {  //MY URLS page
+app.get("/urls", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
     email: req.cookies['email'] || null,
@@ -40,44 +47,62 @@ app.get("/urls", (req, res) => {  //MY URLS page
   res.render("urls_index", templateVars);
 });
 
-app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
-});
-
 app.post("/urls", (req, res) => {
-  const shortUrl = shortURLID(); //Assigns short URL and link to submission, redirects to link page
+  const shortUrl = shortURLID();    //Assigns short URL and link to submission, redirects to link page
   urlDatabase[shortUrl] = req.body.longURL;
   res.redirect(`/urls/${shortUrl}`);
 });
 
-app.post('/urls/:id/delete', (req, res) => { //Deletes link when button is pushed
+//Deletes link when button is pushed
+
+app.post('/urls/:id/delete', (req, res) => {
   delete urlDatabase[req.params.id]
  res.redirect('/urls')
 })
+
+//Page for adding new links
+
+app.get("/urls/new", (req, res) => {
+  const templateVars = {
+    urls: urlDatabase,
+    email: req.cookies['email'] || null,
+    password: req.cookies['password'],
+   };
+  res.render("urls_new", templateVars);
+});
 
 app.post('/urls/:id/edit', (req, res) => { //Updates url from the ID page and redirects to /urls
   urlDatabase[req.params.id] = req.body.longURL
   res.redirect('/urls')
 })
 
-app.get("/urls/:id", (req, res) => {  //Displays link specific page
+//Displays link specific page
+
+app.get("/urls/:id", (req, res) => {  
   const longURL = urlDatabase[req.params.id]
-  const templateVars = { id: req.params.id, longURL: longURL};
+  const templateVars = { 
+    urls: urlDatabase,
+    email: req.cookies['email'] || null,
+    password: req.cookies['password'],
+    id: req.params.id, 
+    longURL: longURL,
+  }
   res.render("urls_show", templateVars);
 });
 
 //Login and Authentication
 
 app.get('/login', (req, res) => {
-  res.render('login', null)
+  templateVars = {email: req.cookies.email}
+  res.render('login', templateVars)
 })
 
 app.post('/login', (req, res) => {
 
-  if(getUserData(req.body.email, 'email', users)) { //Checks for matching email in users
-    if (!getUserData(req.body.password, 'password', users)) { //Checks for falsey if password matches one stored in users, sends error code if not
+  if(getUserData(req.body.email, 'email', users)) { //Checks users object for matching email in registered users
+    if (!getUserData(req.body.password, 'password', users)) { //Checks for falsey if password doesn't match one in currentUser
       return res.status(403).send('Incorrect password')
-    } else if(getUserData(req.body.password, 'password', users)) {  //Checks for truthy if password matches one in users
+    } else if(getUserData(req.body.password, 'password', users)) {  //Checks for truthy if password matches one in currentUser
       res.cookie('email', req.body.email)
       res.cookie('password', req.body.password)
       res.redirect('/urls')
@@ -94,10 +119,12 @@ app.post('/logout', (req, res) => {
   res.clearCookie('password')
   res.redirect('/login')
 })
+
 //Registration
 
 app.get('/register', (req, res) => {
-  res.render('urls_register')
+  const templateVars = {email: req.cookies.email}
+  res.render('urls_register', templateVars)
 })
 
 app.post('/register', (req, res) => {
@@ -107,7 +134,6 @@ app.post('/register', (req, res) => {
     return res.status(400).send('User already exists, please enter new email address')
 }
 
-  
   res.cookie('email', req.body.email),
   res.cookie('password', req.body.password)
 
@@ -115,18 +141,18 @@ app.post('/register', (req, res) => {
     return res.status(400).send('Please enter valid info to register')
   } 
 
-  console.log('users', users)
-
 users[userID] = {
   id: userID,
   email: req.body.email,
-  password: req.body.password
+  password: req.body.password,
 }
+
+console.log('users', users)
 
 res.redirect('/urls')
 })
 
-const users = {};
+
 
 
 
