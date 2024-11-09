@@ -1,244 +1,194 @@
 const express = require("express");
-const { v4: uuidv4 }= require('uuid')
-const cookieSession = require('cookie-session')
+const { v4: uuidv4 } = require("uuid");
+const cookieSession = require("cookie-session");
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8080;
 
-app.set("view engine", "ejs")
+app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
-//app.use(cookieParser())
 app.use(cookieSession({
-  name: 'session',
-  keys: ['email', 'password']
-}))
+    name: "session",
+    keys: ["user_ID"],
+  })
+);
 
-const shortURLID = () => {
-  let id = uuidv4()
-  return id.slice(0, 6)
+const shortURLID = () => uuidv4().slice(0, 6);
+
+// GLOBAL VARIABLES
+
+// Links stored in object to be rendered on page
+const URL_DATABASE = {
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
 };
 
-//Links stored in object to be rendered on page 
+// Object of registered users
+const USERS = {};
 
-const urlDatabase = {
-};
-
-//User info stored here
-
-const users = {};
-
-//Checks user data in users object
-
+// Checks user data in users object
 const getUserData = (value, key, obj) => {
-  return Object.values(obj).some(user => user[key] === value)
-}
+  for (let userID in obj) {
+    if (obj[userID][key] === value) {
+      return obj[userID];
+    }
+  }
+  return null;
+};
+
+const getUserByEmail = (email, obj) => {
+  for (let userID in obj) {
+    if (obj[userID].email === email) { 
+      return obj[userID];
+    }
+  }
+  return null;
+};
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-//Home page - urls_index.js
+// Home page - urls_index.js
 
-app.get('/', (req, res) => { //root home page redirects to Login
-  res.redirect('/login')
-})
+app.get("/", (req, res) => {
+  res.redirect("/login");
+});
 
 app.get("/urls", (req, res) => {
-  const templateVars = {
-    urls: urlDatabase,
-    email: req.session['email'] || null,
-    password: req.session['password'],
-   };
+  if (!req.session.user_ID) {
+    return res.status(403).send("You must be logged in to access this page.");
+  }
+  const user = USERS[req.session.user_ID];
+  const templateVars = { user, urls: URL_DATABASE };
   res.render("urls_index", templateVars);
 });
 
 app.post("/urls", (req, res) => {
-  console.log('req.session', req.session)
-  if(!req.session.email) {
-    return res.status(403).send('You must be logged in to create a tiny URL')
+  if (!req.session.user_ID) {
+    return res.status(403).send("You must be logged in to create a tiny URL");
   }
-  const shortUrl = shortURLID();    //Assigns short URL and link to submission, redirects to link page
-  urlDatabase[shortUrl] = req.body.longURL;
+  const shortUrl = shortURLID();
+  URL_DATABASE[shortUrl] = {
+    longURL: req.body.longURL,
+    userID: req.session.user_ID,
+  };
   res.redirect(`/urls/${shortUrl}`);
 });
 
-//Deletes link when button is pushed
-
-app.post('/urls/:id/delete', (req, res) => {
-  delete urlDatabase[req.params.id]
- res.redirect('/urls')
-})
-
-//Page for adding new links
-
-app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    urls: urlDatabase,
-    email: req.session['email'] || null,
-    password: req.session['password'],
-   };
-  res.render("urls_new", templateVars);
+app.post("/urls/:id/delete", (req, res) => {
+  const deletedURL = URL_DATABASE[req.params.id]
+  const currentUser = USERS[req.session.user_ID]
+  if(!deletedURL) {
+    return res.status(404).send('URL does not exist.')
+  } if(deletedURL.userID === currentUser.id) {
+    delete URL_DATABASE[req.params.id];
+    res.redirect("/urls");
+  } else {
+    return res.status(401).send('Cannot delete another user\'s URL');
+  }
 });
 
-app.post('/urls/:id/edit', (req, res) => { //Updates url from the ID page and redirects to /urls
-  urlDatabase[req.params.id] = req.body.longURL
-  res.redirect('/urls')
-})
+app.get("/urls/new", (req, res) => {
+  if (!req.session.user_ID) {
+    return res.redirect("/login");
+  } 
+  res.render("urls_new", { user: USERS[req.session.user_ID] });
+});
 
-//Displays link specific page
+app.post("/urls/:id/edit", (req, res) => {
+  const editURL = URL_DATABASE[req.params.id]
+  const currentUser = USERS[req.session.user_ID]
+  const { id } = req.params;
 
-app.get("/urls/:id", (req, res) => {  
-  const longURL = urlDatabase[req.params.id]
-  if(!longURL) {
-    return res.status(403).send('URL does not exist')
+  if (!req.session.user_ID) {
+    return res.redirect("/login");
+  } if (!editURL) {
+    return res.status(404).send('URL does not exist.')
+  } if (editURL.userID === currentUser.id) {
+    URL_DATABASE[id].longURL = req.body.longURL;
+    return res.redirect("/urls");
+  } else {
+    return res.status(401).send('Cannot edit another user\'s URL');
+  }
+});
+
+app.get("/urls/:id", (req, res) => {
+  const { id } = req.params;
+  const longURL = URL_DATABASE[id];
+  console.log('longURL', longURL)
+  if (!longURL) {
+    return res.status(403).send("URL does not exist");
   }
   const templateVars = { 
-    urls: urlDatabase,
-    email: req.session['email'] || null,
-    password: req.session['password'],
-    id: req.params.id, 
-    longURL: longURL,
-  }
+    id, 
+    longURL: longURL.longURL, 
+    user: USERS[req.session.user_ID],
+  };
   res.render("urls_show", templateVars);
 });
 
-//Login and Authentication
+// Login and Authentication
 
-app.get('/login', (req, res) => {
-  if(req.session.email) {
-  res.redirect('/urls')
+app.get("/login", (req, res) => {
+  if (req.session.user_ID) {
+    return res.redirect("/urls");
   }
-  const templateVars = {email: req.session.email}
-  res.render('login', templateVars)
-})
+  res.render("login", { user: null });
+});
 
-app.post('/login', (req, res) => {
+app.post("/login", (req, res) => {
+  const { email, password } = req.body;
+  const userAuth = getUserByEmail(email, USERS);
 
-  if(getUserData(req.body.email, 'email', users)) { //Checks users object for matching email in registered users
-    if (!getUserData(req.body.password, 'password', users)) { //Checks for falsey if password doesn't match one in currentUser
-      return res.status(403).send('Incorrect password')
-    } else if(getUserData(req.body.password, 'password', users)) {  //Checks for truthy if password matches one in currentUser
-      res.sessio.email.req.body.email
-      res.session.password = req.body.password
-      res.redirect('/urls')
+  if (userAuth) {
+    if (userAuth[password] === password) { 
+      req.session.user_ID = userAuth.id;
+      return res.redirect("/urls");
+    } else {
+      return res.status(401).send("Incorrect Password");
     }
-  } else if(!getUserData(req.body.email, 'email', users)) {
-    return res.status(403).send('Email cannot be found')
-  } 
-})
+  } else {
+    return res.status(401).send("Email not found");
+  }
+});
 
-//Logout
+// Logout
 
-app.post('/logout', (req, res) => {
-  req.session = null
-  res.redirect('/login')
-})
+app.post("/logout", (req, res) => {
+  req.session = null;
+  res.redirect("/login");
+});
 
-//Registration
+// Registration
 
-app.get('/register', (req, res) => {
-  const templateVars = {email: req.session.email}
-  res.render('urls_register', templateVars)
-})
+app.get("/register", (req, res) => {
+  res.render("urls_register", { user: null });
+});
 
-app.post('/register', (req, res) => {
-  const {email, password} = req.body
+app.post("/register", (req, res) => {
+  const { email, password } = req.body;
 
-  const userID = shortURLID()
+  if (!email || !password) {
+    return res.status(400).send("Please enter valid info to register");
+  }
 
-  if(getUserData(req.body.email, 'email', users)) {
-    return res.status(400).send('User already exists, please enter new email address')
-}
+  if (getUserData(email, "email", USERS)) {
+    return res.status(400).send("User already exists, please enter a new email address");
+  }
 
-  req.session.email =  email
-  req.session.password = password
+  const userID = shortURLID();
+  USERS[userID] = {
+    id: userID,
+    email,
+    password,
+  };
 
-  if(!email || !password) {
-    return res.status(400).send('Please enter valid info to register')
-  } 
-
-users[userID] = {
-  id: userID,
-  email,
-  password,
-}
-
-console.log('users', users)
-
-res.redirect('/urls')
-})
-
-
-
-
-
-
-
-
-
-
-
-
-// app.post("/urls", (req, res) => {
-//   req.body // {id: qwerty, longURL: "google.com"}
-
-
-// })
-
-// //without an express middleware
-// app.post("/urls") 
-// app.post("/urls/:id/edit")
-// app.post("/urls/:id/delete")
-
-// DELETE "/urls/b2xVn2"
-// POST "/url" body {id: qwerty, longURL: "google.com"}
-
-// app.put("/urls/:resourceID", (req, res) => {
-//   urlDatabase[req.params.resourceID] =  {
-//     [req.body.id]: req.body.longURL
-//   }
-// })
-
-// //PUT "/urls/2"  body -> {id: "asdf", longURL: "yahoo.com"}
-
-// {
-//   1: {
-//     "b2xvn2": "google.com"
-//   }, 
-//   2: {
-
-//   }
-// }
-// 1. id, longURL
-// 2. 
-
-
-
-
-// BREAD - browse, read, edit, add, delete
-// B get all urls
-// R get a details of a specific url
-// E/U edit a url 
-// A add a url
-// D delete a url
-
-/*
-const urls = {
-1. qwert - "lighthouse labs"
-2. asdf - google.com 
-}
-
-edit and update - translate to post, put, patch HTTP verbs
-post - create a resource
-app.post("/urls")
-
-put - replace a resource 
-app.post("/urls/") - query parameter
-
-patch - update a resource
-
-
-GET and POST -
-need a middleware 
-
-
-*/
+  req.session.user_ID = userID;
+  res.redirect("/urls");
+});
