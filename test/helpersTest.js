@@ -1,6 +1,6 @@
 const { assert } = require('chai');
 
-const  getUserByEmail  = require('../helper');
+const  getUserByEmail  = require('../helpers');
 
 const testUsers = {
   "userRandomID": {
@@ -19,11 +19,11 @@ describe('getUserByEmail', function() {
   it('should return a user with valid email', function() {
     const user = getUserByEmail("user@example.com", testUsers)
     const expectedUserID = "userRandomID";
-    return assert.equal(user.id, expectedUserID)
+    assert.equal(user.id, expectedUserID)
   });
 
   it('should return null if user id is not in the users database', function() {
     const fakeuser = getUserByEmail('fakeuser@fraud.com', testUsers)
-    return assert.isNull(fakeuser)
+    assert.isNull(fakeuser)
   })
 });
