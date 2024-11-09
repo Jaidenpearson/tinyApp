@@ -2,7 +2,8 @@ const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const cookieSession = require("cookie-session");
 const bcrypt = require('bcryptjs')
-const getUserByEmail = require('./helpers')
+const getUserByEmail = require('./helpers');
+const { escapeXML } = require("ejs");
 const app = express();
 const PORT = 8080;
 
@@ -17,6 +18,17 @@ app.use(cookieSession({
 const shortURLID = () => uuidv4().slice(0, 6);
 
 // GLOBAL VARIABLES
+
+const urlsForUser = (userID) => {
+  let filteredURLS = {}
+
+  for(let id in URL_DATABASE) {
+    if(URL_DATABASE[id].userID === userID) {
+      filteredURLS[id] = URL_DATABASE[id]
+    }
+  }
+  return filteredURLS
+}
 
 // Links stored in object to be rendered on page
 const URL_DATABASE = {
@@ -48,7 +60,8 @@ app.get("/urls", (req, res) => {
     return res.status(403).send("You must be logged in to access this page.");
   }
   const user = USERS[req.session.user_ID];
-  const templateVars = { user, urls: URL_DATABASE };
+  const userURLS = urlsForUser(req.session.user_ID)
+  const templateVars = { user, urls: userURLS}
   res.render("urls_index", templateVars);
 });
 
@@ -86,19 +99,15 @@ app.get("/urls/new", (req, res) => {
 
 app.post("/urls/:id/edit", (req, res) => {
   const editURL = URL_DATABASE[req.params.id]
-  const currentUser = USERS[req.session.user_ID]
   const { id } = req.params;
 
   if (!req.session.user_ID) {
     return res.redirect("/login");
   } if (!editURL) {
     return res.status(404).send('URL does not exist.')
-  } if (editURL.userID === currentUser.id) {
-    URL_DATABASE[id].longURL = req.body.longURL;
-    return res.redirect("/urls");
-  } else {
-    return res.status(401).send('Cannot edit another user\'s URL');
   }
+  URL_DATABASE[id].longURL = req.body.longURL;
+  res.redirect('/urls')
 });
 
 app.get("/urls/:id", (req, res) => {
