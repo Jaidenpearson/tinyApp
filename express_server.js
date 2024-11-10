@@ -3,7 +3,6 @@ const { v4: uuidv4 } = require("uuid");
 const cookieSession = require("cookie-session");
 const bcrypt = require('bcryptjs')
 const { getUserByEmail, urlsForUser} = require('./helpers');
-const { escapeXML } = require("ejs");
 const app = express();
 const PORT = 8080;
 
@@ -40,7 +39,7 @@ app.get("/urls", (req, res) => {
     return res.status(403).send("You must be logged in to access this page.");
   }
   const user = USERS[req.session.user_ID];
-  const userURLS = urlsForUser(req.session.user_ID)
+  const userURLS = urlsForUser(req.session.user_ID, URL_DATABASE)
   const templateVars = { user, urls: userURLS}
   res.render("urls_index", templateVars);
 });
@@ -141,6 +140,9 @@ app.post("/logout", (req, res) => {
 // Registration
 
 app.get("/register", (req, res) => {
+  if (req.session.user_ID) {
+    return res.redirect("/urls");
+  }
   res.render("urls_register", { user: null });
 });
 
