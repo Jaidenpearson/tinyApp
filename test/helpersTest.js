@@ -35,7 +35,10 @@ describe('getUserByEmail', function() {
 
 describe('urlsForUser', () => {
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> a49f03d79115cdcf10c4ef832b959dfe854c8e9c
   it('should return URLs that belong to the specified user', () => {
     const urlDatabase = {
       'b6UTxQ': { longURL: "https://www.tsn.ca", userID: "user123" },
