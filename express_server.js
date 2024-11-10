@@ -92,7 +92,6 @@ app.post("/urls/:id/edit", (req, res) => {
 app.get("/urls/:id", (req, res) => {
   const { id } = req.params;
   const longURL = URL_DATABASE[id];
-  console.log('longURL', longURL)
   if (!longURL) {
     return res.status(403).send("URL does not exist");
   }
@@ -165,8 +164,4 @@ app.post("/register", (req, res) => {
   };
   req.session.user_ID = userID;
   res.redirect("/urls");
-<<<<<<< HEAD
 });
-=======
-});
->>>>>>> a49f03d79115cdcf10c4ef832b959dfe854c8e9c
