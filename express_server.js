@@ -140,6 +140,9 @@ app.post("/logout", (req, res) => {
 // Registration
 
 app.get("/register", (req, res) => {
+  if (req.session.user_ID) {
+    return res.redirect("/urls");
+  }
   res.render("urls_register", { user: null });
 });
 
