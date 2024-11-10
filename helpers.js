@@ -7,4 +7,15 @@ const getUserByEmail = (email, obj) => {
   return null;
 };
 
-module.exports = getUserByEmail
+const urlsForUser = (userID, obj) => {
+  let filteredURLS = {}
+
+  for(let id in obj) {
+    if(obj[id].userID === userID) {
+      filteredURLS[id] = obj[id]
+    }
+  }
+  return filteredURLS
+}
+
+module.exports = {getUserByEmail, urlsForUser}

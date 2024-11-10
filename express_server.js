@@ -2,7 +2,7 @@ const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const cookieSession = require("cookie-session");
 const bcrypt = require('bcryptjs')
-const getUserByEmail = require('./helpers');
+const { getUserByEmail, urlsForUser} = require('./helpers');
 const { escapeXML } = require("ejs");
 const app = express();
 const PORT = 8080;
@@ -19,28 +19,8 @@ const shortURLID = () => uuidv4().slice(0, 6);
 
 // GLOBAL VARIABLES
 
-const urlsForUser = (userID) => {
-  let filteredURLS = {}
-
-  for(let id in URL_DATABASE) {
-    if(URL_DATABASE[id].userID === userID) {
-      filteredURLS[id] = URL_DATABASE[id]
-    }
-  }
-  return filteredURLS
-}
-
 // Links stored in object to be rendered on page
-const URL_DATABASE = {
-  b6UTxQ: {
-    longURL: "https://www.tsn.ca",
-    userID: "aJ48lW",
-  },
-  i3BoGr: {
-    longURL: "https://www.google.ca",
-    userID: "aJ48lW",
-  },
-};
+const URL_DATABASE = {};
 
 // Object of registered users
 const USERS = {};
@@ -59,8 +39,9 @@ app.get("/urls", (req, res) => {
   if (!req.session.user_ID) {
     return res.status(403).send("You must be logged in to access this page.");
   }
+
   const user = USERS[req.session.user_ID];
-  const userURLS = urlsForUser(req.session.user_ID)
+  const userURLS = urlsForUser(req.session.user_ID, URL_DATABASE)
   const templateVars = { user, urls: userURLS}
   res.render("urls_index", templateVars);
 });
@@ -69,7 +50,9 @@ app.post("/urls", (req, res) => {
   if (!req.session.user_ID) {
     return res.status(403).send("You must be logged in to create a tiny URL");
   }
+
   const shortUrl = shortURLID();
+
   URL_DATABASE[shortUrl] = {
     longURL: req.body.longURL,
     userID: req.session.user_ID,
@@ -80,6 +63,7 @@ app.post("/urls", (req, res) => {
 app.post("/urls/:id/delete", (req, res) => {
   const deletedURL = URL_DATABASE[req.params.id]
   const currentUser = USERS[req.session.user_ID]
+
   if(!deletedURL) {
     return res.status(404).send('URL does not exist.')
   } if(deletedURL.userID === currentUser.id) {
