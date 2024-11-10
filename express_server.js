@@ -1,157 +1,166 @@
 const express = require("express");
-const { v4: uuidv4 }= require('uuid')
-const cookieParser = require("cookie-parser");
+const { v4: uuidv4 } = require("uuid");
+const cookieSession = require("cookie-session");
+const bcrypt = require('bcryptjs')
+const { getUserByEmail, urlsForUser} = require('./helpers');
+const { escapeXML } = require("ejs");
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8080;
 
-app.set("view engine", "ejs")
+app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser())
+app.use(cookieSession({
+    name: "session",
+    keys: ["user_ID"],
+  })
+);
 
-const shortURLID = () => {
-  let id = uuidv4()
-  return id.slice(0, 6)
-};
+const shortURLID = () => uuidv4().slice(0, 6);
 
-const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
-};
+// GLOBAL VARIABLES
 
+// Links stored in object to be rendered on page
+const URL_DATABASE = {};
+
+// Object of registered users
+const USERS = {};
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-app.get('/', (req, res) => { //root home page redirects to MY URLS
-  res.redirect('/urls')
-})
+// Home page - urls_index.js
 
-app.get("/urls", (req, res) => {  //MY URLS page
-  const templateVars = {
-    urls: urlDatabase,
-    username: req.cookies["username"],
-   };
-   console.log("templateVars", templateVars)
+app.get("/", (req, res) => {
+  res.redirect("/login");
+});
+
+app.get("/urls", (req, res) => {
+  if (!req.session.user_ID) {
+    return res.status(403).send("You must be logged in to access this page.");
+  }
+  const user = USERS[req.session.user_ID];
+  const userURLS = urlsForUser(req.session.user_ID)
+  const templateVars = { user, urls: userURLS}
   res.render("urls_index", templateVars);
 });
 
-app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
-});
-
 app.post("/urls", (req, res) => {
-  const shortUrl = shortURLID(); //Assigns short URL and link to submission, redirects to link page
-  urlDatabase[shortUrl] = req.body.longURL;
+  if (!req.session.user_ID) {
+    return res.status(403).send("You must be logged in to create a tiny URL");
+  }
+  const shortUrl = shortURLID();
+  URL_DATABASE[shortUrl] = {
+    longURL: req.body.longURL,
+    userID: req.session.user_ID,
+  };
   res.redirect(`/urls/${shortUrl}`);
 });
 
-app.post('/urls/:id/delete', (req, res) => { //Deletes link when button is pushed
-  delete urlDatabase[req.params.id]
- res.redirect('/urls')
-})
+app.post("/urls/:id/delete", (req, res) => {
+  const deletedURL = URL_DATABASE[req.params.id]
+  const currentUser = USERS[req.session.user_ID]
+  if(!deletedURL) {
+    return res.status(404).send('URL does not exist.')
+  } if(deletedURL.userID === currentUser.id) {
+    delete URL_DATABASE[req.params.id];
+    res.redirect("/urls");
+  } else {
+    return res.status(401).send('Cannot delete another user\'s URL');
+  }
+});
 
-app.post('/urls/:id/edit', (req, res) => { //Updates url from the ID page and redirects to /urls
-  urlDatabase[req.params.id] = req.body.longURL
+app.get("/urls/new", (req, res) => {
+  if (!req.session.user_ID) {
+    return res.redirect("/login");
+  } 
+  res.render("urls_new", { user: USERS[req.session.user_ID] });
+});
+
+app.post("/urls/:id/edit", (req, res) => {
+  const editURL = URL_DATABASE[req.params.id]
+  const { id } = req.params;
+
+  if (!req.session.user_ID) {
+    return res.redirect("/login");
+  } if (!editURL) {
+    return res.status(404).send('URL does not exist.')
+  }
+  URL_DATABASE[id].longURL = req.body.longURL;
   res.redirect('/urls')
-})
+});
 
-app.get("/urls/:id", (req, res) => {  //Displays link specific page
-  const longURL = urlDatabase[req.params.id]
-  const templateVars = { id: req.params.id, longURL: longURL};
+app.get("/urls/:id", (req, res) => {
+  const { id } = req.params;
+  const longURL = URL_DATABASE[id];
+  console.log('longURL', longURL)
+  if (!longURL) {
+    return res.status(403).send("URL does not exist");
+  }
+  const templateVars = { 
+    id, 
+    longURL: longURL.longURL, 
+    user: USERS[req.session.user_ID],
+  };
   res.render("urls_show", templateVars);
 });
 
-//Login
+// Login and Authentication
 
-app.post('/login', (req, res) => {
-  res.cookie('username', req.body.username)
-  console.log("req.body.username", req.cookies)
-  res.redirect('/urls')
-})
+app.get("/login", (req, res) => {
+  if (req.session.user_ID) {
+    return res.redirect("/urls");
+  }
+  res.render("login", { user: null });
+});
 
-//Logout
+app.post("/login", (req, res) => {
+  const { email, password } = req.body;
+  const userAuth = getUserByEmail(email, USERS);
 
-app.post('/logout', (req, res) => {
-  res.clearCookie('username')
-  res.redirect('/urls')
-})
+  if (userAuth) {
+    const hashedPassword = userAuth['password']
+    if (bcrypt.compareSync(password, hashedPassword)) { 
+      req.session.user_ID = userAuth.id;
+      return res.redirect("/urls");
+    } else {
+      return res.status(401).send("Incorrect Password");
+    }
+  } else {
+    return res.status(401).send("Email not found");
+  }
+});
 
-//Register
+// Logout
 
-app.get('/register', (req, res) => {
-  res.render('urls_register')
-})
+app.post("/logout", (req, res) => {
+  req.session = null;
+  res.redirect("/login");
+});
 
+// Registration
 
+app.get("/register", (req, res) => {
+  res.render("urls_register", { user: null });
+});
 
+app.post("/register", (req, res) => {
+  const { email, password } = req.body;
 
+  if (!email || !password) {
+    return res.status(400).send("Please enter valid info to register");
+  }
 
+  if (getUserByEmail(email, USERS)) {
+    return res.status(400).send("User already exists, please enter a new email address");
+  }
 
-
-
-
-// app.post("/urls", (req, res) => {
-//   req.body // {id: qwerty, longURL: "google.com"}
-
-
-// })
-
-// //without an express middleware
-// app.post("/urls") 
-// app.post("/urls/:id/edit")
-// app.post("/urls/:id/delete")
-
-// DELETE "/urls/b2xVn2"
-// POST "/url" body {id: qwerty, longURL: "google.com"}
-
-// app.put("/urls/:resourceID", (req, res) => {
-//   urlDatabase[req.params.resourceID] =  {
-//     [req.body.id]: req.body.longURL
-//   }
-// })
-
-// //PUT "/urls/2"  body -> {id: "asdf", longURL: "yahoo.com"}
-
-// {
-//   1: {
-//     "b2xvn2": "google.com"
-//   }, 
-//   2: {
-
-//   }
-// }
-// 1. id, longURL
-// 2. 
-
-
-
-
-// BREAD - browse, read, edit, add, delete
-// B get all urls
-// R get a details of a specific url
-// E/U edit a url 
-// A add a url
-// D delete a url
-
-/*
-const urls = {
-1. qwert - "lighthouse labs"
-2. asdf - google.com 
-}
-
-edit and update - translate to post, put, patch HTTP verbs
-post - create a resource
-app.post("/urls")
-
-put - replace a resource 
-app.post("/urls/") - query parameter
-
-patch - update a resource
-
-
-GET and POST -
-need a middleware 
-
-
-*/
+  const userID = shortURLID();
+  USERS[userID] = {
+    id: userID,
+    email,
+    password: bcrypt.hashSync(password, 10),
+  };
+  req.session.user_ID = userID;
+  res.redirect("/urls");
+});
