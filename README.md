@@ -1,6 +1,6 @@
 # TinyAPP
 
-TinyApp is  URL shortening app that takes in a url from any site and shortens it to a 6 character short url for posting on apps with limited charater limits.
+TinyApp is  URL shortening app that takes in a url from any site and shortens it to a 6 character short url for posting on apps with limited character limits. This project was made  using Node.js, Vanilla JS, Express.js, Ejs, CSS3, Bootstrap, and a lot of curse words.
 
 ## How to run app
 
@@ -12,16 +12,24 @@ TinyApp is  URL shortening app that takes in a url from any site and shortens it
 
 4. Open your browswer to ```http://localhost:8080/register``` to register a user and enter the app.
 
-  ![Register page](TinyApp_register.png)
+  ![Register page](./docs/TinyApp_register.png)
 
 
 ### From here you can add a new url form the 'Create New Url' in the header on each page.
 
-![Create url page](TinyApp_createurl.png)
+![Create url page](./docs/TinyApp_createurl.png)
 
 ### Urls are stored in the My URLs page where the can be edited or deleted.
 
-![Urls page](TinyApp_urls.png)
+![Urls page](./docs/TinyApp_urls.png)
+
+## Dependencies:
+
+- Node.js
+- Express
+- EJS
+- bcryptjs
+- cookie-session
 
 Application written by: 
 

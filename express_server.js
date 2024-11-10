@@ -1,7 +1,7 @@
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const cookieSession = require("cookie-session");
-const bcrypt = require('bcryptjs')
+const bcrypt = require('bcryptjs');
 const { getUserByEmail, urlsForUser} = require('./helpers');
 const app = express();
 const PORT = 8080;
@@ -9,9 +9,9 @@ const PORT = 8080;
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieSession({
-    name: "session",
-    keys: ["user_ID"],
-  })
+  name: "session",
+  keys: ["user_ID"],
+})
 );
 
 const shortURLID = () => uuidv4().slice(0, 6);
@@ -39,8 +39,8 @@ app.get("/urls", (req, res) => {
     return res.status(403).send("You must be logged in to access this page.");
   }
   const user = USERS[req.session.user_ID];
-  const userURLS = urlsForUser(req.session.user_ID, URL_DATABASE)
-  const templateVars = { user, urls: userURLS}
+  const userURLS = urlsForUser(req.session.user_ID, URL_DATABASE);
+  const templateVars = { user, urls: userURLS};
   res.render("urls_index", templateVars);
 });
 
@@ -57,11 +57,11 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  const deletedURL = URL_DATABASE[req.params.id]
-  const currentUser = USERS[req.session.user_ID]
-  if(!deletedURL) {
-    return res.status(404).send('URL does not exist.')
-  } if(deletedURL.userID === currentUser.id) {
+  const deletedURL = URL_DATABASE[req.params.id];
+  const currentUser = USERS[req.session.user_ID];
+  if (!deletedURL) {
+    return res.status(404).send('URL does not exist.');
+  } if (deletedURL.userID === currentUser.id) {
     delete URL_DATABASE[req.params.id];
     res.redirect("/urls");
   } else {
@@ -72,21 +72,21 @@ app.post("/urls/:id/delete", (req, res) => {
 app.get("/urls/new", (req, res) => {
   if (!req.session.user_ID) {
     return res.redirect("/login");
-  } 
+  }
   res.render("urls_new", { user: USERS[req.session.user_ID] });
 });
 
 app.post("/urls/:id/edit", (req, res) => {
-  const editURL = URL_DATABASE[req.params.id]
+  const editURL = URL_DATABASE[req.params.id];
   const { id } = req.params;
 
   if (!req.session.user_ID) {
     return res.redirect("/login");
   } if (!editURL) {
-    return res.status(404).send('URL does not exist.')
+    return res.status(404).send('URL does not exist.');
   }
   URL_DATABASE[id].longURL = req.body.longURL;
-  res.redirect('/urls')
+  res.redirect('/urls');
 });
 
 app.get("/urls/:id", (req, res) => {
@@ -95,9 +95,9 @@ app.get("/urls/:id", (req, res) => {
   if (!longURL) {
     return res.status(403).send("URL does not exist");
   }
-  const templateVars = { 
-    id, 
-    longURL: longURL.longURL, 
+  const templateVars = {
+    id,
+    longURL: longURL.longURL,
     user: USERS[req.session.user_ID],
   };
   res.render("urls_show", templateVars);
@@ -117,8 +117,8 @@ app.post("/login", (req, res) => {
   const userAuth = getUserByEmail(email, USERS);
 
   if (userAuth) {
-    const hashedPassword = userAuth['password']
-    if (bcrypt.compareSync(password, hashedPassword)) { 
+    const hashedPassword = userAuth['password'];
+    if (bcrypt.compareSync(password, hashedPassword)) {
       req.session.user_ID = userAuth.id;
       return res.redirect("/urls");
     } else {
