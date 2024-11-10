@@ -3,7 +3,6 @@ const { v4: uuidv4 } = require("uuid");
 const cookieSession = require("cookie-session");
 const bcrypt = require('bcryptjs')
 const { getUserByEmail, urlsForUser} = require('./helpers');
-const { escapeXML } = require("ejs");
 const app = express();
 const PORT = 8080;
 
@@ -39,7 +38,6 @@ app.get("/urls", (req, res) => {
   if (!req.session.user_ID) {
     return res.status(403).send("You must be logged in to access this page.");
   }
-
   const user = USERS[req.session.user_ID];
   const userURLS = urlsForUser(req.session.user_ID, URL_DATABASE)
   const templateVars = { user, urls: userURLS}
@@ -50,9 +48,7 @@ app.post("/urls", (req, res) => {
   if (!req.session.user_ID) {
     return res.status(403).send("You must be logged in to create a tiny URL");
   }
-
   const shortUrl = shortURLID();
-
   URL_DATABASE[shortUrl] = {
     longURL: req.body.longURL,
     userID: req.session.user_ID,
@@ -63,7 +59,6 @@ app.post("/urls", (req, res) => {
 app.post("/urls/:id/delete", (req, res) => {
   const deletedURL = URL_DATABASE[req.params.id]
   const currentUser = USERS[req.session.user_ID]
-
   if(!deletedURL) {
     return res.status(404).send('URL does not exist.')
   } if(deletedURL.userID === currentUser.id) {
