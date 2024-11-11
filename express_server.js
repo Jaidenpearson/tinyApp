@@ -86,7 +86,7 @@ app.post("/urls/:id/edit", (req, res) => {
     return res.status(404).send('URL does not exist.');
   }
   URL_DATABASE[id].longURL = req.body.longURL;
-  res.redirect('/urls');
+  res.redirect(`/urls/${id}`);
 });
 
 app.get("/urls/:id", (req, res) => {
