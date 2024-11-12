@@ -1,3 +1,5 @@
+const { v4: uuidv4 } = require("uuid");
+
 const getUserByEmail = (email, obj) => {
   for (let userID in obj) {
     if (obj[userID].email === email) { 
@@ -18,4 +20,10 @@ const urlsForUser = (userID, obj) => {
   return filteredURLS
 }
 
-module.exports = {getUserByEmail, urlsForUser}
+const shortURLID = () => uuidv4().slice(0, 6);
+
+const URL_DATABASE = {};
+
+const USERS = {};
+
+module.exports = {getUserByEmail, urlsForUser, shortURLID, URL_DATABASE, USERS}

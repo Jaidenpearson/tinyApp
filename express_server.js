@@ -1,8 +1,7 @@
 const express = require("express");
-const { v4: uuidv4 } = require("uuid");
 const cookieSession = require("cookie-session");
 const bcrypt = require('bcryptjs');
-const { getUserByEmail, urlsForUser} = require('./helpers');
+const { getUserByEmail, urlsForUser, shortURLID, URL_DATABASE, USERS} = require('./helpers');
 const app = express();
 const PORT = 8080;
 
@@ -13,20 +12,6 @@ app.use(cookieSession({
   keys: ["user_ID"],
 })
 );
-
-const shortURLID = () => uuidv4().slice(0, 6);
-
-// GLOBAL VARIABLES
-
-// Links stored in object to be rendered on page
-const URL_DATABASE = {};
-
-// Object of registered users
-const USERS = {};
-
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
 
 // Home page - urls_index.js
 
@@ -44,15 +29,21 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+
+//New urls are sent to the urls page
+
 app.post("/urls", (req, res) => {
   if (!req.session.user_ID) {
     return res.status(403).send("You must be logged in to create a tiny URL");
   }
+
   const shortUrl = shortURLID();
+
   URL_DATABASE[shortUrl] = {
     longURL: req.body.longURL,
     userID: req.session.user_ID,
   };
+
   res.redirect(`/urls/${shortUrl}`);
 });
 
@@ -82,18 +73,27 @@ app.post("/urls/:id/edit", (req, res) => {
 
   if (!req.session.user_ID) {
     return res.redirect("/login");
-  } if (!editURL) {
+  } 
+  
+  if (!editURL) {
     return res.status(404).send('URL does not exist.');
   }
+
   URL_DATABASE[id].longURL = req.body.longURL;
-  res.redirect(`/urls/${id}`);
+  res.redirect(`/urls`);
 });
 
 app.get("/urls/:id", (req, res) => {
   const { id } = req.params;
   const longURL = URL_DATABASE[id];
+  const userID = req.session.user_ID
+
   if (!longURL) {
     return res.status(403).send("URL does not exist");
+  } 
+  
+  if (!userID || longURL.userID !== userID) {
+    return res.status(403).send('You do not have permission to view this url')
   }
   const templateVars = {
     id,
@@ -162,6 +162,11 @@ app.post("/register", (req, res) => {
     email,
     password: bcrypt.hashSync(password, 10),
   };
+
   req.session.user_ID = userID;
   res.redirect("/urls");
+});
+
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
 });

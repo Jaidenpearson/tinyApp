@@ -35,7 +35,7 @@
               <td><%= id %></td>
               <td><%= urls[id].longURL %></td>
               <td>
-                <form action="/urls/<%- id %>/edit" method="post">
+                <form action="/urls/<%- id %>" method="get">
                   <button type="submit" class="btn btn-outline-primary" href="/urls/<%= id %>">Edit</button>
                 </form>
               </td>
